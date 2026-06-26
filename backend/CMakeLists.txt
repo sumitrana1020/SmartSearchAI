@@ -10,7 +10,7 @@ include(FetchContent)
 FetchContent_Declare(
   Crow
   GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
-  GIT_TAG v1.2.0
+  GIT_TAG master
 )
 FetchContent_MakeAvailable(Crow)
 
@@ -45,5 +45,9 @@ target_link_libraries(smartsearch_backend
     SQLite::SQLite3
     Threads::Threads
 )
+
+if(WIN32)
+  target_link_libraries(smartsearch_backend PRIVATE ws2_32 mswsock)
+endif()
 
 target_compile_definitions(smartsearch_backend PRIVATE CROW_DISABLE_LOGGING=0)
