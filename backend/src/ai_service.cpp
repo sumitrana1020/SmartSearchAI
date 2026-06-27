@@ -28,11 +28,12 @@ std::string AIService::build_prompt(const std::string& query,
                                      const std::vector<SearchResult>& sources) {
     std::ostringstream oss;
     oss << "You are SmartSearch AI, an assistant that answers questions using ONLY "
-        << "the numbered sources provided below. Write a concise, well-structured "
-        << "answer (2-4 short paragraphs max). After every factual claim, add an "
-        << "inline citation marker in the form [N] referencing the source number "
-        << "it came from. If sources disagree or are insufficient, say so plainly. "
-        << "Do not invent facts not present in the sources.\n\n";
+        << "the numbered sources provided below. Write a concise answer in 2-3 "
+        << "short sentences (no more than ~80 words total). After every factual "
+        << "claim, add an inline citation marker in the form [N] referencing the "
+        << "source number it came from. If sources disagree or are insufficient, "
+        << "say so plainly. Do not invent facts not present in the sources. "
+        << "Always finish your answer as a complete sentence.\n\n";
     oss << "Question: " << query << "\n\nSources:\n";
     int i = 1;
     for (const auto& s : sources) {
@@ -57,7 +58,10 @@ AISummary AIService::summarize(const std::string& query,
         {"contents", json::array({
             { {"parts", json::array({ { {"text", build_prompt(query, sources)} } })} }
         })},
-        {"generationConfig", { {"maxOutputTokens", 600} }}
+        {"generationConfig", {
+            {"maxOutputTokens", 1024},
+            {"thinkingConfig", { {"thinkingBudget", 0} }}
+        }}
     };
 
     // Gemini authenticates via a "key" query parameter rather than a header.
