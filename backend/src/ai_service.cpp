@@ -17,8 +17,11 @@ std::string env_or(const char* key, const std::string& fallback) {
 
 AIService::AIService() {
     api_key_ = env_or("LLM_API_KEY", "");
-    model_ = env_or("LLM_MODEL", "claude-sonnet-4-6");
-    endpoint_ = env_or("LLM_API_ENDPOINT", "https://api.anthropic.com/v1/messages");
+    model_ = env_or("LLM_MODEL", "gemini-2.5-flash");
+    // Gemini's endpoint is built from the model name; LLM_API_ENDPOINT lets
+    // you override the base URL if needed (e.g. a different API version).
+    endpoint_ = env_or("LLM_API_ENDPOINT",
+        "https://generativelanguage.googleapis.com/v1beta/models/" + model_ + ":generateContent");
 }
 
 std::string AIService::build_prompt(const std::string& query,
@@ -49,20 +52,20 @@ AISummary AIService::summarize(const std::string& query,
 
     auto start = std::chrono::steady_clock::now();
 
+    // Gemini expects: { "contents": [ { "parts": [ { "text": "..." } ] } ] }
     json body = {
-        {"model", model_},
-        {"max_tokens", 600},
-        {"messages", json::array({
-            { {"role", "user"}, {"content", build_prompt(query, sources)} }
-        })}
+        {"contents", json::array({
+            { {"parts", json::array({ { {"text", build_prompt(query, sources)} } })} }
+        })},
+        {"generationConfig", { {"maxOutputTokens", 600} }}
     };
 
-    std::map<std::string, std::string> headers = {
-        {"x-api-key", api_key_},
-        {"anthropic-version", "2023-06-01"}
-    };
+    // Gemini authenticates via a "key" query parameter rather than a header.
+    std::string url = endpoint_ + "?key=" + api_key_;
 
-    auto res = http::post_json(endpoint_, body.dump(), headers);
+    std::map<std::string, std::string> headers = {};
+
+    auto res = http::post_json(url, body.dump(), headers);
     if (!res.ok()) {
         throw std::runtime_error("LLM API error (" + std::to_string(res.status_code) + "): " + res.body);
     }
@@ -73,10 +76,11 @@ AISummary AIService::summarize(const std::string& query,
     }
 
     std::string text;
-    if (parsed.contains("content") && parsed["content"].is_array()) {
-        for (const auto& block : parsed["content"]) {
-            if (block.value("type", "") == "text") {
-                text += block.value("text", "");
+    if (parsed.contains("candidates") && parsed["candidates"].is_array() && !parsed["candidates"].empty()) {
+        const auto& content = parsed["candidates"][0]["content"];
+        if (content.contains("parts") && content["parts"].is_array()) {
+            for (const auto& part : content["parts"]) {
+                text += part.value("text", "");
             }
         }
     }
