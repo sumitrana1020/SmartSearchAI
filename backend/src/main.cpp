@@ -11,8 +11,13 @@ using json = nlohmann::json;
 // Converts [N] markers in plain text into <cite data-src="N">N</cite> markers
 // the frontend already knows how to render and wire up to the source rail.
 static std::string convert_citation_markers(const std::string& text) {
+    // Normalize "[3, 5]" -> "[3,5]" so the data-src attribute and frontend
+    // split logic don't have to deal with stray spaces.
+    std::regex comma_space(R"(,\s+(\d))");
+    std::string normalized = std::regex_replace(text, comma_space, ",$1");
+
     std::regex marker_re(R"(\[(\d+(?:,\d+)*)\])");
-    return std::regex_replace(text, marker_re,
+    return std::regex_replace(normalized, marker_re,
         R"(<span class="cite" data-src="$1">$1</span>)");
 }
 
