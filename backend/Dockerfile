@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libsqlite3-dev \
     libssl-dev \
+    libasio-dev \
     pkg-config \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -32,6 +33,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libsqlite3-dev \
+    libasio-dev \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
