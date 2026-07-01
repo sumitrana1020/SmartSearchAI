@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 
-# --- Crow (header-only web framework) ---
+# --- Crow (use master branch for newer Asio compatibility) ---
 FetchContent_Declare(
   Crow
   GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
@@ -46,8 +46,7 @@ target_link_libraries(smartsearch_backend
     Threads::Threads
 )
 
+# Windows-specific socket libraries
 if(WIN32)
   target_link_libraries(smartsearch_backend PRIVATE ws2_32 mswsock)
 endif()
-
-target_compile_definitions(smartsearch_backend PRIVATE CROW_DISABLE_LOGGING=0)
